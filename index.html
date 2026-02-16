@@ -2,179 +2,593 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>10秒點擊挑戰</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>迷你賽車：手機即玩</title>
   <style>
-    :root { --bg:#0f172a; --card:#1e2a38; --btn:#38b6ff; --btn2:#60a5ff; --txt:#ffffff; }
+    :root{
+      --bg:#0b1220;
+      --panel:rgba(255,255,255,.08);
+      --panel2:rgba(255,255,255,.12);
+      --txt:#ffffff;
+      --accent:#38b6ff;
+    }
     *{ box-sizing:border-box; }
+    html,body{ height:100%; }
     body{
-      margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+      margin:0; background:var(--bg); color:var(--txt);
       font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
-      background:var(--bg); color:var(--txt);
+      overflow:hidden;
+      touch-action:none;
+    }
+    #wrap{ position:relative; width:100vw; height:100vh; display:flex; }
+    canvas{
+      width:100%; height:100%;
+      display:block;
+      background: radial-gradient(1200px 800px at 50% 30%, #111b33 0%, #070b14 70%);
+    }
+    .hud{
+      position:absolute; left:12px; top:12px; right:12px;
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      pointer-events:none;
+    }
+    .chip{
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.15);
+      border-radius:14px;
+      padding:10px 12px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      min-width:110px;
+    }
+    .chip .label{ font-size:11px; opacity:.8; margin-bottom:3px; }
+    .chip .value{ font-size:18px; font-weight:800; letter-spacing:.4px; }
+    .centerTop{
+      position:absolute; top:12px; left:50%; transform:translateX(-50%);
+      display:flex; gap:10px; pointer-events:auto;
+    }
+    .btn{
+      appearance:none; border:0;
+      background:var(--panel2);
+      border:1px solid rgba(255,255,255,.18);
+      color:var(--txt);
+      padding:10px 12px;
+      border-radius:14px;
+      font-weight:700;
+      cursor:pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active{ transform:scale(.98); }
+
+    .overlay{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      padding:18px;
+      background:rgba(0,0,0,.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
     }
     .card{
       width:min(520px, 92vw);
-      background:var(--card);
-      border-radius:16px;
-      padding:22px 18px;
-      box-shadow:0 0 24px rgba(0,0,0,.45);
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:18px;
+      padding:18px 16px;
+      text-align:center;
+      box-shadow:0 10px 30px rgba(0,0,0,.4);
+    }
+    .title{ font-size:20px; font-weight:900; margin:0 0 8px; }
+    .sub{ font-size:13px; opacity:.85; line-height:1.5; margin:0 0 12px; }
+    .rowBtns{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+    .btnPrimary{
+      background:var(--accent); color:#001018;
+      border:0;
+      padding:12px 16px;
+      border-radius:14px;
+      font-size:16px;
+      font-weight:900;
+      min-width:160px;
+    }
+    .btnGhost{
+      background:transparent;
+      border:1px solid rgba(255,255,255,.22);
+      padding:12px 16px;
+      border-radius:14px;
+      font-size:15px;
+      font-weight:800;
+      min-width:160px;
+    }
+
+    .controls{
+      position:absolute; left:0; right:0; bottom:0;
+      height:34vh;
+      display:flex; align-items:flex-end; justify-content:space-between;
+      padding:14px 14px 18px;
+      pointer-events:none;
+    }
+    .pad{
+      display:flex; gap:12px;
+      pointer-events:auto;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .pad.right{ flex-direction:column; align-items:flex-end; }
+    .touchBtn{
+      width:74px; height:74px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.20);
+      background:rgba(255,255,255,.10);
+      color:var(--txt);
+      font-size:18px;
+      font-weight:900;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 8px 18px rgba(0,0,0,.35);
+      -webkit-tap-highlight-color: transparent;
+      touch-action:none;
+    }
+    .touchBtn:active{ transform:scale(.98); background:rgba(255,255,255,.16); }
+    .touchBtn.small{ width:74px; height:56px; font-size:16px; border-radius:16px; }
+    .hintBottom{
+      position:absolute; left:50%; transform:translateX(-50%);
+      bottom:14px;
+      font-size:12px; opacity:.75;
+      background:rgba(0,0,0,.25);
+      border:1px solid rgba(255,255,255,.12);
+      padding:6px 10px;
+      border-radius:999px;
+      pointer-events:none;
+      max-width:92vw;
       text-align:center;
     }
-    h1{ font-size:22px; margin:0 0 12px; }
-    .row{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin:12px 0 6px; }
-    .stat{
-      background:rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:12px;
-      padding:10px 12px;
-      min-width:140px;
-    }
-    .label{ opacity:.8; font-size:12px; margin-bottom:4px; }
-    .value{ font-size:22px; font-weight:700; letter-spacing:.5px; }
-    button{
-      appearance:none; border:0; border-radius:12px;
-      padding:14px 20px; font-size:18px; font-weight:700;
-      background:var(--btn); color:#001018;
-      cursor:pointer;
-      transition: transform .06s ease, filter .12s ease;
-      width:min(320px, 80vw);
-      touch-action:manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-    button:hover{ filter:brightness(1.05); }
-    button:active{ transform:scale(.985); background:var(--btn2); }
-    .hint{ margin-top:10px; font-size:13px; opacity:.85; line-height:1.45; }
-    .small{ margin-top:8px; font-size:12px; opacity:.65; }
-    .footer{
-      margin-top:14px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;
-    }
-    .ghost{
-      background:transparent; color:var(--txt);
-      border:1px solid rgba(255,255,255,.18);
-      font-weight:600;
-      width:auto;
-      padding:10px 14px;
+    @media (min-width: 900px){
+      .controls{ height:28vh; }
+      .touchBtn{ width:82px; height:82px; }
     }
   </style>
 </head>
 <body>
-  <main class="card" role="main">
-    <h1>🎮 10 秒點擊挑戰</h1>
+  <div id="wrap">
+    <canvas id="c"></canvas>
 
-    <div class="row" aria-live="polite">
-      <div class="stat">
-        <div class="label">得分</div>
+    <div class="hud">
+      <div class="chip">
+        <div class="label">速度</div>
+        <div class="value"><span id="spd">0</span> km/h</div>
+      </div>
+      <div class="chip">
+        <div class="label">分數</div>
         <div class="value" id="score">0</div>
       </div>
-      <div class="stat">
-        <div class="label">剩餘時間</div>
-        <div class="value" id="time">10</div>
-      </div>
-      <div class="stat">
-        <div class="label">最佳紀錄（本機）</div>
+      <div class="chip">
+        <div class="label">最佳</div>
         <div class="value" id="best">0</div>
       </div>
     </div>
 
-    <button id="tapBtn">點我得分</button>
-
-    <div class="footer">
-      <button class="ghost" id="resetBestBtn">清除最佳紀錄</button>
-      <button class="ghost" id="restartBtn">重新開始</button>
+    <div class="centerTop">
+      <button class="btn" id="pauseBtn">暫停</button>
+      <button class="btn" id="muteBtn">音效：開</button>
     </div>
 
-    <p class="hint">按下「點我得分」會自動開始倒數。10 秒內點越多越好！</p>
-    <p class="small">離線可玩；最佳紀錄會存在你的裝置（localStorage）。</p>
-  </main>
+    <div class="controls">
+      <div class="pad left">
+        <div class="touchBtn" id="leftBtn">◀</div>
+        <div class="touchBtn" id="rightBtn">▶</div>
+      </div>
+      <div class="pad right">
+        <div class="touchBtn" id="gasBtn">⤊</div>
+        <div class="touchBtn small" id="brakeBtn">煞車</div>
+      </div>
+    </div>
+
+    <div class="hintBottom">操作：左/右轉向、⤊ 加速、煞車減速；閃避障礙物（手機直向更好玩）</div>
+
+    <div class="overlay" id="overlay">
+      <div class="card">
+        <p class="title">🏁 迷你賽車：手機即玩</p>
+        <p class="sub">在道路上閃避障礙物，撐越久分數越高。<br/>建議直向遊玩；若要更難：一直按住 ⤊。</p>
+        <div class="rowBtns">
+          <button class="btnPrimary" id="startBtn">開始</button>
+          <button class="btnGhost" id="howBtn">玩法</button>
+        </div>
+        <p class="sub" id="howText" style="display:none; margin-top:10px;">
+          • 左/右：微調轉向（可連續按住）<br/>
+          • ⤊：加速（速度越快，障礙越密）<br/>
+          • 煞車：緊急減速<br/>
+          • 撞到障礙物就結束，可再來一局
+        </p>
+      </div>
+    </div>
+  </div>
 
 <script>
 (() => {
-  const scoreEl = document.getElementById('score');
-  const timeEl  = document.getElementById('time');
-  const bestEl  = document.getElementById('best');
-  const btn     = document.getElementById('tapBtn');
-  const restartBtn = document.getElementById('restartBtn');
-  const resetBestBtn = document.getElementById('resetBestBtn');
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d', { alpha:false });
+  let W=0, H=0, DPR=1;
 
-  const BEST_KEY = 'tap_game_best_v1';
-  let best = Number(localStorage.getItem(BEST_KEY) || 0);
+  function resize(){
+    DPR = Math.min(2.5, window.devicePixelRatio || 1);
+    W = Math.floor(window.innerWidth * DPR);
+    H = Math.floor(window.innerHeight * DPR);
+    canvas.width = W; canvas.height = H;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const overlay = document.getElementById('overlay');
+  const startBtn = document.getElementById('startBtn');
+  const howBtn = document.getElementById('howBtn');
+  const howText = document.getElementById('howText');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const muteBtn = document.getElementById('muteBtn');
+
+  const spdEl = document.getElementById('spd');
+  const scoreEl = document.getElementById('score');
+  const bestEl = document.getElementById('best');
+
+  const leftBtn = document.getElementById('leftBtn');
+  const rightBtn = document.getElementById('rightBtn');
+  const gasBtn = document.getElementById('gasBtn');
+  const brakeBtn = document.getElementById('brakeBtn');
+
+  // WebAudio beep
+  let audioCtx = null;
+  let muted = false;
+  function beep(freq=440, dur=0.06, type='sine', gain=0.05){
+    if (muted) return;
+    try{
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      g.gain.value = gain;
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start();
+      o.stop(audioCtx.currentTime + dur);
+    }catch(e){}
+  }
+
+  const LANES = 3;
+  const roadW = () => Math.min(W*0.82, 520*DPR);
+  const roadX = () => (W - roadW())/2;
+  const laneW = () => roadW()/LANES;
+
+  const player = { x:0, y:0, w:46*DPR, h:78*DPR, targetX:0, speedX:0 };
+  let running=false, paused=false, gameOver=false;
+
+  let speed=0;
+  const baseSpeed = 520*DPR;
+  const maxSpeed  = 1100*DPR;
+  const accel     = 820*DPR;
+  const brakeDecel= 1400*DPR;
+  const friction  = 520*DPR;
+
+  let scroll=0;
+  let score=0;
+  let best = Number(localStorage.getItem('mini_racer_best_v1') || 0);
   bestEl.textContent = best;
 
-  let score = 0;
-  let time  = 10;
-  let timer = null;
-  let running = false;
+  const obstacles=[];
+  let spawnTimer=0;
+  const spawnBase=0.72;
 
-  function render(){
-    scoreEl.textContent = score;
-    timeEl.textContent  = time;
-    bestEl.textContent  = best;
-  }
+  const input = { left:false, right:false, gas:false, brake:false, tilt:0 };
 
-  function endGame(){
-    running = false;
-    btn.disabled = true;
-    btn.textContent = '時間到！再玩一次';
-    if (score > best){
-      best = score;
-      localStorage.setItem(BEST_KEY, String(best));
-      render();
-    }
-    // iOS 上 alert 偶爾會卡住觸控，改用 confirm 更穩
-    setTimeout(() => {
-      const again = confirm(`時間到！\n你的分數：${score}\n最佳紀錄：${best}\n\n要再玩一次嗎？`);
-      if (again) startNewGame();
-    }, 50);
-  }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+  function laneCenterX(lane){ return roadX() + laneW()*(lane+0.5); }
 
-  function tick(){
-    time -= 1;
-    render();
-    if (time <= 0){
-      clearInterval(timer);
-      timer = null;
-      endGame();
+  // Tilt (optional)
+  let tiltState = 'unsupported';
+  function initTilt(){
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+      tiltState = 'needs_permission';
+    } else if (typeof window.DeviceOrientationEvent !== 'undefined'){
+      tiltState = 'enabled';
+      window.addEventListener('deviceorientation', (e)=>{
+        const g = (e.gamma || 0);
+        input.tilt = Math.max(-20, Math.min(20, g)) / 20;
+      });
     }
   }
+  initTilt();
 
-  function startNewGame(){
-    if (timer) { clearInterval(timer); timer = null; }
-    score = 0;
-    time  = 10;
-    running = false;
-    btn.disabled = false;
-    btn.textContent = '點我得分';
-    render();
+  async function requestTiltPermission(){
+    try{
+      const res = await DeviceOrientationEvent.requestPermission();
+      if (res === 'granted'){
+        tiltState = 'enabled';
+        window.addEventListener('deviceorientation', (e)=>{
+          const g = (e.gamma || 0);
+          input.tilt = Math.max(-20, Math.min(20, g)) / 20;
+        });
+        beep(660,.05,'triangle',.04);
+      } else {
+        tiltState = 'denied';
+      }
+    }catch(e){ tiltState='denied'; }
   }
 
-  function start(){
-    if (running) return;
-    running = true;
-    timer = setInterval(tick, 1000);
+  function bindHold(btn, key){
+    const on = (e)=>{ e.preventDefault(); input[key]=true; };
+    const off= (e)=>{ e.preventDefault(); input[key]=false; };
+    btn.addEventListener('touchstart', on, {passive:false});
+    btn.addEventListener('touchend', off, {passive:false});
+    btn.addEventListener('touchcancel', off, {passive:false});
+    btn.addEventListener('mousedown', on);
+    btn.addEventListener('mouseup', off);
+    btn.addEventListener('mouseleave', off);
   }
+  bindHold(leftBtn,'left');
+  bindHold(rightBtn,'right');
+  bindHold(gasBtn,'gas');
+  bindHold(brakeBtn,'brake');
 
-  function hit(){
-    if (time <= 0) return;
-    if (!running) start();
-    score += 1;
-    render();
-  }
-
-  // Events
-  btn.addEventListener('click', hit);
-  // iOS 觸控加強（避免 300ms 延遲/誤判）
-  btn.addEventListener('touchend', (e) => { e.preventDefault(); hit(); }, {passive:false});
-
-  restartBtn.addEventListener('click', startNewGame);
-  resetBestBtn.addEventListener('click', () => {
-    best = 0;
-    localStorage.removeItem(BEST_KEY);
-    render();
-    alert('已清除最佳紀錄');
+  window.addEventListener('keydown', (e)=>{
+    if (e.key==='ArrowLeft') input.left=true;
+    if (e.key==='ArrowRight') input.right=true;
+    if (e.key==='ArrowUp') input.gas=true;
+    if (e.key==='ArrowDown') input.brake=true;
+    if (e.key===' ') togglePause();
+  });
+  window.addEventListener('keyup', (e)=>{
+    if (e.key==='ArrowLeft') input.left=false;
+    if (e.key==='ArrowRight') input.right=false;
+    if (e.key==='ArrowUp') input.gas=false;
+    if (e.key==='ArrowDown') input.brake=false;
   });
 
-  // init
-  startNewGame();
+  function updateHud(){
+    spdEl.textContent = Math.round(speed/(DPR*6));
+    scoreEl.textContent = score;
+    bestEl.textContent = best;
+  }
+
+  function reset(){
+    obstacles.length=0;
+    spawnTimer=0;
+    speed = baseSpeed*0.55;
+    scroll=0;
+    score=0;
+    gameOver=false;
+    paused=false;
+
+    player.y = H - 160*DPR;
+    player.x = laneCenterX(1);
+    player.targetX = player.x;
+    player.speedX=0;
+    updateHud();
+  }
+
+  function spawnObstacle(){
+    const lane = Math.floor(Math.random()*LANES);
+    const size = 44*DPR + Math.random()*28*DPR;
+    obstacles.push({
+      lane, w:size, h:size*1.1,
+      x: laneCenterX(lane),
+      y: -size*1.5,
+      kind: Math.random()<0.5 ? 'cone':'block'
+    });
+  }
+
+  function rectHit(ax,ay,aw,ah, bx,by,bw,bh){
+    return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
+  }
+
+  function crash(){
+    gameOver=true;
+    running=false;
+    beep(150,.10,'sawtooth',.08);
+    setTimeout(()=>beep(90,.14,'sawtooth',.08),80);
+
+    if (score>best){
+      best=score;
+      localStorage.setItem('mini_racer_best_v1', String(best));
+    }
+    overlay.style.display='flex';
+    overlay.querySelector('.title').textContent='💥 撞到了！';
+    overlay.querySelector('.sub').innerHTML = `你的分數：<b>${score}</b>　最佳：<b>${best}</b><br/>想再挑戰一次嗎？`;
+    howText.style.display='none';
+    startBtn.textContent='再來一局';
+  }
+
+  function togglePause(){
+    if (!running || gameOver) return;
+    paused = !paused;
+    pauseBtn.textContent = paused ? '繼續' : '暫停';
+    beep(paused ? 330 : 520, .05, 'triangle', .04);
+  }
+
+  function update(dt){
+    if (!running || paused || gameOver) return;
+
+    const target = input.gas ? maxSpeed : baseSpeed;
+    if (input.gas) speed = Math.min(maxSpeed, speed + accel*dt);
+    else {
+      if (speed > target) speed = Math.max(target, speed - friction*dt);
+      else speed = Math.min(target, speed + (accel*0.25)*dt);
+    }
+    if (input.brake) speed = Math.max(baseSpeed*0.35, speed - brakeDecel*dt);
+
+    const steer = (input.right?1:0) - (input.left?1:0) + input.tilt*0.8;
+    const maxXSpeed = 900*DPR;
+    player.speedX = steer * maxXSpeed;
+    player.targetX = clamp(
+      player.x + player.speedX*dt,
+      roadX() + player.w*0.6,
+      roadX() + roadW() - player.w*0.6
+    );
+    player.x += (player.targetX - player.x) * Math.min(1, 10*dt);
+
+    scroll += speed*dt;
+    score += Math.floor((speed/(300*DPR)) * 10 * dt);
+    updateHud();
+
+    const difficulty = clamp((speed - baseSpeed*0.4) / (maxSpeed - baseSpeed*0.4), 0, 1);
+    const spawnInterval = spawnBase - difficulty*0.30;
+    spawnTimer += dt;
+    if (spawnTimer >= spawnInterval){
+      spawnTimer=0;
+      spawnObstacle();
+      if (difficulty>0.75 && Math.random()<0.25) spawnObstacle();
+    }
+
+    for (let i=obstacles.length-1;i>=0;i--){
+      const o=obstacles[i];
+      o.y += speed*dt;
+      o.x = laneCenterX(o.lane);
+      if (o.y - o.h > H + 40*DPR) obstacles.splice(i,1);
+    }
+
+    const px = player.x - player.w/2;
+    const py = player.y - player.h/2;
+    for (const o of obstacles){
+      const ox = o.x - o.w/2;
+      const oy = o.y - o.h/2;
+      if (rectHit(px,py,player.w,player.h, ox,oy,o.w,o.h)){
+        crash(); break;
+      }
+    }
+  }
+
+  function roundRect(x,y,w,h,r,fill,stroke){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.arcTo(x+w, y, x+w, y+h, rr);
+    ctx.arcTo(x+w, y+h, x, y+h, rr);
+    ctx.arcTo(x, y+h, x, y, rr);
+    ctx.arcTo(x, y, x+w, y, rr);
+    ctx.closePath();
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
+  }
+
+  function drawCar(cx,cy,w,h){
+    const x=cx-w/2, y=cy-h/2;
+    ctx.fillStyle='rgba(0,0,0,.35)';
+    roundRect(x+6*DPR,y+10*DPR,w,h,14*DPR,true,false);
+
+    const g=ctx.createLinearGradient(x,y,x+w,y+h);
+    g.addColorStop(0,'#36c2ff'); g.addColorStop(1,'#1b5cff');
+    ctx.fillStyle=g;
+    roundRect(x,y,w,h,14*DPR,true,false);
+
+    ctx.fillStyle='rgba(0,0,0,.35)';
+    roundRect(x+w*0.22,y+h*0.18,w*0.56,h*0.34,10*DPR,true,false);
+
+    ctx.fillStyle='rgba(255,255,255,.65)';
+    roundRect(x+w*0.46,y+h*0.08,w*0.08,h*0.84,8*DPR,true,false);
+
+    ctx.fillStyle='rgba(255,255,210,.85)';
+    roundRect(x+w*0.12,y+h*0.84,w*0.18,h*0.10,6*DPR,true,false);
+    roundRect(x+w*0.70,y+h*0.84,w*0.18,h*0.10,6*DPR,true,false);
+
+    ctx.fillStyle='rgba(0,0,0,.55)';
+    roundRect(x-6*DPR,y+h*0.18,12*DPR,h*0.26,6*DPR,true,false);
+    roundRect(x-6*DPR,y+h*0.60,12*DPR,h*0.26,6*DPR,true,false);
+    roundRect(x+w-6*DPR,y+h*0.18,12*DPR,h*0.26,6*DPR,true,false);
+    roundRect(x+w-6*DPR,y+h*0.60,12*DPR,h*0.26,6*DPR,true,false);
+  }
+
+  function drawObstacle(o){
+    const x=o.x-o.w/2, y=o.y-o.h/2;
+    ctx.fillStyle='rgba(0,0,0,.35)';
+    roundRect(x+6*DPR,y+8*DPR,o.w,o.h,14*DPR,true,false);
+
+    if (o.kind==='cone'){
+      const g=ctx.createLinearGradient(x,y,x,y+o.h);
+      g.addColorStop(0,'#ffb703'); g.addColorStop(1,'#fb8500');
+      ctx.fillStyle=g;
+      roundRect(x,y,o.w,o.h,14*DPR,true,false);
+      ctx.fillStyle='rgba(255,255,255,.6)';
+      roundRect(x+o.w*0.15,y+o.h*0.38,o.w*0.70,o.h*0.10,8*DPR,true,false);
+      ctx.fillStyle='rgba(0,0,0,.22)';
+      roundRect(x+o.w*0.20,y+o.h*0.64,o.w*0.60,o.h*0.10,8*DPR,true,false);
+    } else {
+      const g=ctx.createLinearGradient(x,y,x+o.w,y+o.h);
+      g.addColorStop(0,'#ff4d4d'); g.addColorStop(1,'#b5179e');
+      ctx.fillStyle=g;
+      roundRect(x,y,o.w,o.h,16*DPR,true,false);
+      ctx.strokeStyle='rgba(255,255,255,.35)';
+      ctx.lineWidth=3*DPR;
+      roundRect(x+o.w*0.10,y+o.h*0.12,o.w*0.80,o.h*0.76,12*DPR,false,true);
+      ctx.fillStyle='rgba(255,255,255,.18)';
+      roundRect(x+o.w*0.18,y+o.h*0.20,o.w*0.24,o.h*0.18,10*DPR,true,false);
+    }
+  }
+
+  function draw(){
+    ctx.fillStyle='#070b14';
+    ctx.fillRect(0,0,W,H);
+
+    const rx=roadX(), rw=roadW();
+    ctx.fillStyle='#101728';
+    ctx.fillRect(rx,0,rw,H);
+
+    ctx.fillStyle='#2a3656';
+    ctx.fillRect(rx,0,6*DPR,H);
+    ctx.fillRect(rx+rw-6*DPR,0,6*DPR,H);
+
+    const lw=laneW();
+    const dashH=44*DPR, gap=38*DPR;
+    const offset=-(scroll%(dashH+gap));
+    ctx.strokeStyle='rgba(255,255,255,.35)';
+    ctx.lineWidth=4*DPR;
+    for (let i=1;i<LANES;i++){
+      const x=rx+lw*i;
+      ctx.beginPath();
+      for (let y=offset; y<H; y += dashH+gap){
+        ctx.moveTo(x,y); ctx.lineTo(x,y+dashH);
+      }
+      ctx.stroke();
+    }
+
+    for (const o of obstacles) drawObstacle(o);
+    drawCar(player.x, player.y, player.w, player.h);
+
+    const topGrad=ctx.createLinearGradient(0,0,0,220*DPR);
+    topGrad.addColorStop(0,'rgba(0,0,0,.45)');
+    topGrad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=topGrad;
+    ctx.fillRect(0,0,W,220*DPR);
+  }
+
+  let tPrev = performance.now();
+  function loop(now){
+    const dt = Math.min(0.033, (now-tPrev)/1000);
+    tPrev=now;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  howBtn.addEventListener('click', ()=>{
+    howText.style.display = (howText.style.display==='none') ? 'block' : 'none';
+  });
+  pauseBtn.addEventListener('click', ()=>togglePause());
+  muteBtn.addEventListener('click', ()=>{
+    muted=!muted;
+    muteBtn.textContent = muted ? '音效：關' : '音效：開';
+    if (!muted) beep(740,.05,'triangle',.04);
+  });
+
+  function startGame(){
+    if (tiltState==='needs_permission') requestTiltPermission(); // optional
+    overlay.style.display='none';
+    reset();
+    running=true;
+    paused=false;
+    pauseBtn.textContent='暫停';
+    beep(660,.05,'triangle',.04);
+    setTimeout(()=>beep(880,.06,'triangle',.04),70);
+  }
+  startBtn.addEventListener('click', startGame);
+
+  // stop iOS scroll/zoom gestures
+  document.addEventListener('gesturestart', (e)=>e.preventDefault());
+  document.addEventListener('touchmove', (e)=>e.preventDefault(), {passive:false});
 })();
 </script>
 </body>
