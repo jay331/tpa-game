@@ -1,594 +1,152 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>迷你賽車：手機即玩</title>
-  <style>
-    :root{
-      --bg:#0b1220;
-      --panel:rgba(255,255,255,.08);
-      --panel2:rgba(255,255,255,.12);
-      --txt:#ffffff;
-      --accent:#38b6ff;
-    }
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
-    body{
-      margin:0; background:var(--bg); color:var(--txt);
-      font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
-      overflow:hidden;
-      touch-action:none;
-    }
-    #wrap{ position:relative; width:100vw; height:100vh; display:flex; }
-    canvas{
-      width:100%; height:100%;
-      display:block;
-      background: radial-gradient(1200px 800px at 50% 30%, #111b33 0%, #070b14 70%);
-    }
-    .hud{
-      position:absolute; left:12px; top:12px; right:12px;
-      display:flex; gap:10px; align-items:center; justify-content:space-between;
-      pointer-events:none;
-    }
-    .chip{
-      background:var(--panel);
-      border:1px solid rgba(255,255,255,.15);
-      border-radius:14px;
-      padding:10px 12px;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      min-width:110px;
-    }
-    .chip .label{ font-size:11px; opacity:.8; margin-bottom:3px; }
-    .chip .value{ font-size:18px; font-weight:800; letter-spacing:.4px; }
-    .centerTop{
-      position:absolute; top:12px; left:50%; transform:translateX(-50%);
-      display:flex; gap:10px; pointer-events:auto;
-    }
-    .btn{
-      appearance:none; border:0;
-      background:var(--panel2);
-      border:1px solid rgba(255,255,255,.18);
-      color:var(--txt);
-      padding:10px 12px;
-      border-radius:14px;
-      font-weight:700;
-      cursor:pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .btn:active{ transform:scale(.98); }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>迷你賽車：手機即玩（左右按鈕版）</title>
+<style>
+:root{
+  --bg:#0b1220; --txt:#fff; --accent:#38b6ff;
+  --panel:rgba(255,255,255,.12);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;
+  overflow:hidden; touch-action:none;
+}
+#wrap{position:relative;width:100vw;height:100vh}
+canvas{width:100%;height:100%;display:block}
 
-    .overlay{
-      position:absolute; inset:0;
-      display:flex; align-items:center; justify-content:center;
-      padding:18px;
-      background:rgba(0,0,0,.55);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-    }
-    .card{
-      width:min(520px, 92vw);
-      background:rgba(255,255,255,.08);
-      border:1px solid rgba(255,255,255,.18);
-      border-radius:18px;
-      padding:18px 16px;
-      text-align:center;
-      box-shadow:0 10px 30px rgba(0,0,0,.4);
-    }
-    .title{ font-size:20px; font-weight:900; margin:0 0 8px; }
-    .sub{ font-size:13px; opacity:.85; line-height:1.5; margin:0 0 12px; }
-    .rowBtns{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
-    .btnPrimary{
-      background:var(--accent); color:#001018;
-      border:0;
-      padding:12px 16px;
-      border-radius:14px;
-      font-size:16px;
-      font-weight:900;
-      min-width:160px;
-    }
-    .btnGhost{
-      background:transparent;
-      border:1px solid rgba(255,255,255,.22);
-      padding:12px 16px;
-      border-radius:14px;
-      font-size:15px;
-      font-weight:800;
-      min-width:160px;
-    }
+/* BIG SIDE BUTTONS */
+.sideBtn{
+  position:absolute; top:0; bottom:0; width:22vw; max-width:160px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:44px; font-weight:900;
+  background:linear-gradient(to bottom, rgba(255,255,255,.10), rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.18);
+  color:#fff;
+  user-select:none; -webkit-user-select:none;
+}
+.sideBtn:active{background:rgba(255,255,255,.22)}
+#leftBtn{left:0;border-radius:0 18px 18px 0}
+#rightBtn{right:0;border-radius:18px 0 0 18px}
 
-    .controls{
-      position:absolute; left:0; right:0; bottom:0;
-      height:34vh;
-      display:flex; align-items:flex-end; justify-content:space-between;
-      padding:14px 14px 18px;
-      pointer-events:none;
-    }
-    .pad{
-      display:flex; gap:12px;
-      pointer-events:auto;
-      user-select:none;
-      -webkit-user-select:none;
-    }
-    .pad.right{ flex-direction:column; align-items:flex-end; }
-    .touchBtn{
-      width:74px; height:74px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.20);
-      background:rgba(255,255,255,.10);
-      color:var(--txt);
-      font-size:18px;
-      font-weight:900;
-      display:flex; align-items:center; justify-content:center;
-      box-shadow:0 8px 18px rgba(0,0,0,.35);
-      -webkit-tap-highlight-color: transparent;
-      touch-action:none;
-    }
-    .touchBtn:active{ transform:scale(.98); background:rgba(255,255,255,.16); }
-    .touchBtn.small{ width:74px; height:56px; font-size:16px; border-radius:16px; }
-    .hintBottom{
-      position:absolute; left:50%; transform:translateX(-50%);
-      bottom:14px;
-      font-size:12px; opacity:.75;
-      background:rgba(0,0,0,.25);
-      border:1px solid rgba(255,255,255,.12);
-      padding:6px 10px;
-      border-radius:999px;
-      pointer-events:none;
-      max-width:92vw;
-      text-align:center;
-    }
-    @media (min-width: 900px){
-      .controls{ height:28vh; }
-      .touchBtn{ width:82px; height:82px; }
-    }
-  </style>
+/* HUD */
+.hud{
+  position:absolute; left:12px; top:12px; right:12px;
+  display:flex; justify-content:space-between; gap:8px; pointer-events:none;
+}
+.chip{
+  background:var(--panel); border-radius:14px; padding:8px 12px;
+  min-width:96px; text-align:center; font-weight:800;
+}
+.centerTop{
+  position:absolute; top:12px; left:50%; transform:translateX(-50%);
+}
+.btn{
+  background:var(--panel); border:1px solid rgba(255,255,255,.2);
+  color:#fff; padding:8px 12px; border-radius:12px; font-weight:700;
+}
+.overlay{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.6)
+}
+.card{
+  background:rgba(255,255,255,.1); border-radius:18px;
+  padding:18px; text-align:center; width:min(92vw,420px)
+}
+.primary{background:var(--accent); color:#001018; border:0; padding:12px 18px; border-radius:14px; font-weight:900}
+</style>
 </head>
 <body>
-  <div id="wrap">
-    <canvas id="c"></canvas>
+<div id="wrap">
+  <canvas id="c"></canvas>
 
-    <div class="hud">
-      <div class="chip">
-        <div class="label">速度</div>
-        <div class="value"><span id="spd">0</span> km/h</div>
-      </div>
-      <div class="chip">
-        <div class="label">分數</div>
-        <div class="value" id="score">0</div>
-      </div>
-      <div class="chip">
-        <div class="label">最佳</div>
-        <div class="value" id="best">0</div>
-      </div>
-    </div>
-
-    <div class="centerTop">
-      <button class="btn" id="pauseBtn">暫停</button>
-      <button class="btn" id="muteBtn">音效：開</button>
-    </div>
-
-    <div class="controls">
-      <div class="pad left">
-        <div class="touchBtn" id="leftBtn">◀</div>
-        <div class="touchBtn" id="rightBtn">▶</div>
-      </div>
-      <div class="pad right">
-        <div class="touchBtn" id="gasBtn">⤊</div>
-        <div class="touchBtn small" id="brakeBtn">煞車</div>
-      </div>
-    </div>
-
-    <div class="hintBottom">操作：左/右轉向、⤊ 加速、煞車減速；閃避障礙物（手機直向更好玩）</div>
-
-    <div class="overlay" id="overlay">
-      <div class="card">
-        <p class="title">🏁 迷你賽車：手機即玩</p>
-        <p class="sub">在道路上閃避障礙物，撐越久分數越高。<br/>建議直向遊玩；若要更難：一直按住 ⤊。</p>
-        <div class="rowBtns">
-          <button class="btnPrimary" id="startBtn">開始</button>
-          <button class="btnGhost" id="howBtn">玩法</button>
-        </div>
-        <p class="sub" id="howText" style="display:none; margin-top:10px;">
-          • 左/右：微調轉向（可連續按住）<br/>
-          • ⤊：加速（速度越快，障礙越密）<br/>
-          • 煞車：緊急減速<br/>
-          • 撞到障礙物就結束，可再來一局
-        </p>
-      </div>
-    </div>
+  <div class="hud">
+    <div class="chip">速度 <span id="spd">0</span></div>
+    <div class="chip">分數 <span id="score">0</span></div>
+    <div class="chip">最佳 <span id="best">0</span></div>
   </div>
 
+  <div class="centerTop">
+    <button class="btn" id="pauseBtn">暫停</button>
+  </div>
+
+  <!-- BIG LEFT / RIGHT BUTTONS -->
+  <div class="sideBtn" id="leftBtn">◀</div>
+  <div class="sideBtn" id="rightBtn">▶</div>
+
+  <div class="overlay" id="overlay">
+    <div class="card">
+      <h2>🏁 迷你賽車</h2>
+      <p>按左右螢幕邊緣轉向<br>一直撐下去就得高分</p>
+      <button class="primary" id="startBtn">開始</button>
+    </div>
+  </div>
+</div>
+
 <script>
-(() => {
-  const canvas = document.getElementById('c');
-  const ctx = canvas.getContext('2d', { alpha:false });
-  let W=0, H=0, DPR=1;
-
+(()=>{
+  const c=document.getElementById('c'),ctx=c.getContext('2d');
+  let W,H,DPR;
   function resize(){
-    DPR = Math.min(2.5, window.devicePixelRatio || 1);
-    W = Math.floor(window.innerWidth * DPR);
-    H = Math.floor(window.innerHeight * DPR);
-    canvas.width = W; canvas.height = H;
+    DPR=Math.min(2.5,devicePixelRatio||1);
+    W=innerWidth*DPR; H=innerHeight*DPR;
+    c.width=W; c.height=H;
+  } addEventListener('resize',resize); resize();
+
+  const spdEl=spd=document.getElementById('spd'),
+        scoreEl=document.getElementById('score'),
+        bestEl=document.getElementById('best');
+  let best=Number(localStorage.getItem('racer_best')||0); bestEl.textContent=best;
+
+  let x=W/2, y=H*0.75, speed=400*DPR, score=0;
+  let running=false, paused=false;
+  const obs=[];
+
+  function spawn(){ obs.push({x:(Math.random()*.6+.2)*W, y:-40*DPR}); }
+
+  const input={L:false,R:false};
+  function bind(btn,key){
+    btn.addEventListener('touchstart',e=>{e.preventDefault();input[key]=true},{passive:false});
+    btn.addEventListener('touchend',e=>{e.preventDefault();input[key]=false},{passive:false});
   }
-  window.addEventListener('resize', resize);
-  resize();
+  bind(leftBtn,'L'); bind(rightBtn,'R');
 
-  const overlay = document.getElementById('overlay');
-  const startBtn = document.getElementById('startBtn');
-  const howBtn = document.getElementById('howBtn');
-  const howText = document.getElementById('howText');
-  const pauseBtn = document.getElementById('pauseBtn');
-  const muteBtn = document.getElementById('muteBtn');
-
-  const spdEl = document.getElementById('spd');
-  const scoreEl = document.getElementById('score');
-  const bestEl = document.getElementById('best');
-
-  const leftBtn = document.getElementById('leftBtn');
-  const rightBtn = document.getElementById('rightBtn');
-  const gasBtn = document.getElementById('gasBtn');
-  const brakeBtn = document.getElementById('brakeBtn');
-
-  // WebAudio beep
-  let audioCtx = null;
-  let muted = false;
-  function beep(freq=440, dur=0.06, type='sine', gain=0.05){
-    if (muted) return;
-    try{
-      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = type;
-      o.frequency.value = freq;
-      g.gain.value = gain;
-      o.connect(g); g.connect(audioCtx.destination);
-      o.start();
-      o.stop(audioCtx.currentTime + dur);
-    }catch(e){}
-  }
-
-  const LANES = 3;
-  const roadW = () => Math.min(W*0.82, 520*DPR);
-  const roadX = () => (W - roadW())/2;
-  const laneW = () => roadW()/LANES;
-
-  const player = { x:0, y:0, w:46*DPR, h:78*DPR, targetX:0, speedX:0 };
-  let running=false, paused=false, gameOver=false;
-
-  let speed=0;
-  const baseSpeed = 520*DPR;
-  const maxSpeed  = 1100*DPR;
-  const accel     = 820*DPR;
-  const brakeDecel= 1400*DPR;
-  const friction  = 520*DPR;
-
-  let scroll=0;
-  let score=0;
-  let best = Number(localStorage.getItem('mini_racer_best_v1') || 0);
-  bestEl.textContent = best;
-
-  const obstacles=[];
-  let spawnTimer=0;
-  const spawnBase=0.72;
-
-  const input = { left:false, right:false, gas:false, brake:false, tilt:0 };
-
-  function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
-  function laneCenterX(lane){ return roadX() + laneW()*(lane+0.5); }
-
-  // Tilt (optional)
-  let tiltState = 'unsupported';
-  function initTilt(){
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
-      tiltState = 'needs_permission';
-    } else if (typeof window.DeviceOrientationEvent !== 'undefined'){
-      tiltState = 'enabled';
-      window.addEventListener('deviceorientation', (e)=>{
-        const g = (e.gamma || 0);
-        input.tilt = Math.max(-20, Math.min(20, g)) / 20;
-      });
-    }
-  }
-  initTilt();
-
-  async function requestTiltPermission(){
-    try{
-      const res = await DeviceOrientationEvent.requestPermission();
-      if (res === 'granted'){
-        tiltState = 'enabled';
-        window.addEventListener('deviceorientation', (e)=>{
-          const g = (e.gamma || 0);
-          input.tilt = Math.max(-20, Math.min(20, g)) / 20;
-        });
-        beep(660,.05,'triangle',.04);
-      } else {
-        tiltState = 'denied';
-      }
-    }catch(e){ tiltState='denied'; }
-  }
-
-  function bindHold(btn, key){
-    const on = (e)=>{ e.preventDefault(); input[key]=true; };
-    const off= (e)=>{ e.preventDefault(); input[key]=false; };
-    btn.addEventListener('touchstart', on, {passive:false});
-    btn.addEventListener('touchend', off, {passive:false});
-    btn.addEventListener('touchcancel', off, {passive:false});
-    btn.addEventListener('mousedown', on);
-    btn.addEventListener('mouseup', off);
-    btn.addEventListener('mouseleave', off);
-  }
-  bindHold(leftBtn,'left');
-  bindHold(rightBtn,'right');
-  bindHold(gasBtn,'gas');
-  bindHold(brakeBtn,'brake');
-
-  window.addEventListener('keydown', (e)=>{
-    if (e.key==='ArrowLeft') input.left=true;
-    if (e.key==='ArrowRight') input.right=true;
-    if (e.key==='ArrowUp') input.gas=true;
-    if (e.key==='ArrowDown') input.brake=true;
-    if (e.key===' ') togglePause();
-  });
-  window.addEventListener('keyup', (e)=>{
-    if (e.key==='ArrowLeft') input.left=false;
-    if (e.key==='ArrowRight') input.right=false;
-    if (e.key==='ArrowUp') input.gas=false;
-    if (e.key==='ArrowDown') input.brake=false;
-  });
-
-  function updateHud(){
-    spdEl.textContent = Math.round(speed/(DPR*6));
-    scoreEl.textContent = score;
-    bestEl.textContent = best;
-  }
-
-  function reset(){
-    obstacles.length=0;
-    spawnTimer=0;
-    speed = baseSpeed*0.55;
-    scroll=0;
-    score=0;
-    gameOver=false;
-    paused=false;
-
-    player.y = H - 160*DPR;
-    player.x = laneCenterX(1);
-    player.targetX = player.x;
-    player.speedX=0;
-    updateHud();
-  }
-
-  function spawnObstacle(){
-    const lane = Math.floor(Math.random()*LANES);
-    const size = 44*DPR + Math.random()*28*DPR;
-    obstacles.push({
-      lane, w:size, h:size*1.1,
-      x: laneCenterX(lane),
-      y: -size*1.5,
-      kind: Math.random()<0.5 ? 'cone':'block'
-    });
-  }
-
-  function rectHit(ax,ay,aw,ah, bx,by,bw,bh){
-    return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
-  }
-
-  function crash(){
-    gameOver=true;
-    running=false;
-    beep(150,.10,'sawtooth',.08);
-    setTimeout(()=>beep(90,.14,'sawtooth',.08),80);
-
-    if (score>best){
-      best=score;
-      localStorage.setItem('mini_racer_best_v1', String(best));
-    }
-    overlay.style.display='flex';
-    overlay.querySelector('.title').textContent='💥 撞到了！';
-    overlay.querySelector('.sub').innerHTML = `你的分數：<b>${score}</b>　最佳：<b>${best}</b><br/>想再挑戰一次嗎？`;
-    howText.style.display='none';
-    startBtn.textContent='再來一局';
-  }
-
-  function togglePause(){
-    if (!running || gameOver) return;
-    paused = !paused;
-    pauseBtn.textContent = paused ? '繼續' : '暫停';
-    beep(paused ? 330 : 520, .05, 'triangle', .04);
-  }
-
-  function update(dt){
-    if (!running || paused || gameOver) return;
-
-    const target = input.gas ? maxSpeed : baseSpeed;
-    if (input.gas) speed = Math.min(maxSpeed, speed + accel*dt);
-    else {
-      if (speed > target) speed = Math.max(target, speed - friction*dt);
-      else speed = Math.min(target, speed + (accel*0.25)*dt);
-    }
-    if (input.brake) speed = Math.max(baseSpeed*0.35, speed - brakeDecel*dt);
-
-    const steer = (input.right?1:0) - (input.left?1:0) + input.tilt*0.8;
-    const maxXSpeed = 900*DPR;
-    player.speedX = steer * maxXSpeed;
-    player.targetX = clamp(
-      player.x + player.speedX*dt,
-      roadX() + player.w*0.6,
-      roadX() + roadW() - player.w*0.6
-    );
-    player.x += (player.targetX - player.x) * Math.min(1, 10*dt);
-
-    scroll += speed*dt;
-    score += Math.floor((speed/(300*DPR)) * 10 * dt);
-    updateHud();
-
-    const difficulty = clamp((speed - baseSpeed*0.4) / (maxSpeed - baseSpeed*0.4), 0, 1);
-    const spawnInterval = spawnBase - difficulty*0.30;
-    spawnTimer += dt;
-    if (spawnTimer >= spawnInterval){
-      spawnTimer=0;
-      spawnObstacle();
-      if (difficulty>0.75 && Math.random()<0.25) spawnObstacle();
-    }
-
-    for (let i=obstacles.length-1;i>=0;i--){
-      const o=obstacles[i];
-      o.y += speed*dt;
-      o.x = laneCenterX(o.lane);
-      if (o.y - o.h > H + 40*DPR) obstacles.splice(i,1);
-    }
-
-    const px = player.x - player.w/2;
-    const py = player.y - player.h/2;
-    for (const o of obstacles){
-      const ox = o.x - o.w/2;
-      const oy = o.y - o.h/2;
-      if (rectHit(px,py,player.w,player.h, ox,oy,o.w,o.h)){
-        crash(); break;
+  function loop(){
+    if(running&&!paused){
+      if(Math.random()<0.03) spawn();
+      if(input.L) x-=10*DPR;
+      if(input.R) x+=10*DPR;
+      x=Math.max(40*DPR,Math.min(W-40*DPR,x));
+      speed+=.2*DPR;
+      score+=1; scoreEl.textContent=score;
+      spdEl.textContent=Math.round(speed/(DPR*6));
+      ctx.fillStyle='#0b1220'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#38b6ff'; ctx.fillRect(x-20*DPR,y-40*DPR,40*DPR,80*DPR);
+      ctx.fillStyle='#ff4d4d';
+      for(let i=obs.length-1;i>=0;i--){
+        obs[i].y+=speed*.02;
+        ctx.fillRect(obs[i].x-18*DPR,obs[i].y-18*DPR,36*DPR,36*DPR);
+        if(obs[i].y>H) obs.splice(i,1);
+        if(Math.abs(obs[i].x-x)<30*DPR && Math.abs(obs[i].y-y)<40*DPR){
+          running=false;
+          if(score>best){best=score;localStorage.setItem('racer_best',best)}
+          overlay.style.display='flex';
+        }
       }
     }
-  }
-
-  function roundRect(x,y,w,h,r,fill,stroke){
-    const rr = Math.min(r, w/2, h/2);
-    ctx.beginPath();
-    ctx.moveTo(x+rr, y);
-    ctx.arcTo(x+w, y, x+w, y+h, rr);
-    ctx.arcTo(x+w, y+h, x, y+h, rr);
-    ctx.arcTo(x, y+h, x, y, rr);
-    ctx.arcTo(x, y, x+w, y, rr);
-    ctx.closePath();
-    if (fill) ctx.fill();
-    if (stroke) ctx.stroke();
-  }
-
-  function drawCar(cx,cy,w,h){
-    const x=cx-w/2, y=cy-h/2;
-    ctx.fillStyle='rgba(0,0,0,.35)';
-    roundRect(x+6*DPR,y+10*DPR,w,h,14*DPR,true,false);
-
-    const g=ctx.createLinearGradient(x,y,x+w,y+h);
-    g.addColorStop(0,'#36c2ff'); g.addColorStop(1,'#1b5cff');
-    ctx.fillStyle=g;
-    roundRect(x,y,w,h,14*DPR,true,false);
-
-    ctx.fillStyle='rgba(0,0,0,.35)';
-    roundRect(x+w*0.22,y+h*0.18,w*0.56,h*0.34,10*DPR,true,false);
-
-    ctx.fillStyle='rgba(255,255,255,.65)';
-    roundRect(x+w*0.46,y+h*0.08,w*0.08,h*0.84,8*DPR,true,false);
-
-    ctx.fillStyle='rgba(255,255,210,.85)';
-    roundRect(x+w*0.12,y+h*0.84,w*0.18,h*0.10,6*DPR,true,false);
-    roundRect(x+w*0.70,y+h*0.84,w*0.18,h*0.10,6*DPR,true,false);
-
-    ctx.fillStyle='rgba(0,0,0,.55)';
-    roundRect(x-6*DPR,y+h*0.18,12*DPR,h*0.26,6*DPR,true,false);
-    roundRect(x-6*DPR,y+h*0.60,12*DPR,h*0.26,6*DPR,true,false);
-    roundRect(x+w-6*DPR,y+h*0.18,12*DPR,h*0.26,6*DPR,true,false);
-    roundRect(x+w-6*DPR,y+h*0.60,12*DPR,h*0.26,6*DPR,true,false);
-  }
-
-  function drawObstacle(o){
-    const x=o.x-o.w/2, y=o.y-o.h/2;
-    ctx.fillStyle='rgba(0,0,0,.35)';
-    roundRect(x+6*DPR,y+8*DPR,o.w,o.h,14*DPR,true,false);
-
-    if (o.kind==='cone'){
-      const g=ctx.createLinearGradient(x,y,x,y+o.h);
-      g.addColorStop(0,'#ffb703'); g.addColorStop(1,'#fb8500');
-      ctx.fillStyle=g;
-      roundRect(x,y,o.w,o.h,14*DPR,true,false);
-      ctx.fillStyle='rgba(255,255,255,.6)';
-      roundRect(x+o.w*0.15,y+o.h*0.38,o.w*0.70,o.h*0.10,8*DPR,true,false);
-      ctx.fillStyle='rgba(0,0,0,.22)';
-      roundRect(x+o.w*0.20,y+o.h*0.64,o.w*0.60,o.h*0.10,8*DPR,true,false);
-    } else {
-      const g=ctx.createLinearGradient(x,y,x+o.w,y+o.h);
-      g.addColorStop(0,'#ff4d4d'); g.addColorStop(1,'#b5179e');
-      ctx.fillStyle=g;
-      roundRect(x,y,o.w,o.h,16*DPR,true,false);
-      ctx.strokeStyle='rgba(255,255,255,.35)';
-      ctx.lineWidth=3*DPR;
-      roundRect(x+o.w*0.10,y+o.h*0.12,o.w*0.80,o.h*0.76,12*DPR,false,true);
-      ctx.fillStyle='rgba(255,255,255,.18)';
-      roundRect(x+o.w*0.18,y+o.h*0.20,o.w*0.24,o.h*0.18,10*DPR,true,false);
-    }
-  }
-
-  function draw(){
-    ctx.fillStyle='#070b14';
-    ctx.fillRect(0,0,W,H);
-
-    const rx=roadX(), rw=roadW();
-    ctx.fillStyle='#101728';
-    ctx.fillRect(rx,0,rw,H);
-
-    ctx.fillStyle='#2a3656';
-    ctx.fillRect(rx,0,6*DPR,H);
-    ctx.fillRect(rx+rw-6*DPR,0,6*DPR,H);
-
-    const lw=laneW();
-    const dashH=44*DPR, gap=38*DPR;
-    const offset=-(scroll%(dashH+gap));
-    ctx.strokeStyle='rgba(255,255,255,.35)';
-    ctx.lineWidth=4*DPR;
-    for (let i=1;i<LANES;i++){
-      const x=rx+lw*i;
-      ctx.beginPath();
-      for (let y=offset; y<H; y += dashH+gap){
-        ctx.moveTo(x,y); ctx.lineTo(x,y+dashH);
-      }
-      ctx.stroke();
-    }
-
-    for (const o of obstacles) drawObstacle(o);
-    drawCar(player.x, player.y, player.w, player.h);
-
-    const topGrad=ctx.createLinearGradient(0,0,0,220*DPR);
-    topGrad.addColorStop(0,'rgba(0,0,0,.45)');
-    topGrad.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=topGrad;
-    ctx.fillRect(0,0,W,220*DPR);
-  }
-
-  let tPrev = performance.now();
-  function loop(now){
-    const dt = Math.min(0.033, (now-tPrev)/1000);
-    tPrev=now;
-    update(dt);
-    draw();
     requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
+  } loop();
 
-  howBtn.addEventListener('click', ()=>{
-    howText.style.display = (howText.style.display==='none') ? 'block' : 'none';
-  });
-  pauseBtn.addEventListener('click', ()=>togglePause());
-  muteBtn.addEventListener('click', ()=>{
-    muted=!muted;
-    muteBtn.textContent = muted ? '音效：關' : '音效：開';
-    if (!muted) beep(740,.05,'triangle',.04);
-  });
-
-  function startGame(){
-    if (tiltState==='needs_permission') requestTiltPermission(); // optional
+  startBtn.onclick=()=>{
     overlay.style.display='none';
-    reset();
-    running=true;
-    paused=false;
-    pauseBtn.textContent='暫停';
-    beep(660,.05,'triangle',.04);
-    setTimeout(()=>beep(880,.06,'triangle',.04),70);
-  }
-  startBtn.addEventListener('click', startGame);
-
-  // stop iOS scroll/zoom gestures
-  document.addEventListener('gesturestart', (e)=>e.preventDefault());
-  document.addEventListener('touchmove', (e)=>e.preventDefault(), {passive:false});
+    obs.length=0; speed=400*DPR; score=0;
+    running=true; paused=false;
+  };
+  pauseBtn.onclick=()=>paused=!paused;
 })();
 </script>
 </body>
